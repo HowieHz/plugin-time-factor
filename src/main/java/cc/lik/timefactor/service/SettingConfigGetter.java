@@ -24,6 +24,10 @@ public interface SettingConfigGetter {
         private boolean enableOGTimeFactor;
         private boolean enableMetaTimeFactor;
         private boolean enableStructuredData;
+        private boolean enableTwitterCards;
+        private String twitterCardsType;
+        private String twitterSiteUsername;
+        private String twitterCreatorUsername;
         private String defaultImage;
     }
 }

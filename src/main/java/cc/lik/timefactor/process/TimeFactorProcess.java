@@ -251,6 +251,11 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
                 sb.append(genSchemaOrgScript(seoData));
             }
 
+            if (config.isEnableTwitterCards()) {
+                sb.append(genTwitterCards(seoData, config.getTwitterCardsType(),
+                    config.getTwitterSiteUsername(), config.getTwitterCreatorUsername()));
+            }
+
             model.add(modelFactory.createText(sb.toString()));
         }).then();
     }
@@ -279,14 +284,14 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
 
     private String genOGMeta(SeoData seoData) {
         return """
-            <meta property="og:type" content="article"/>
-            <meta property="og:title" content="%s"/>
-            <meta property="og:description" content="%s"/>
-            <meta property="og:image" content="%s"/>
-            <meta property="og:url" content="%s"/>
-            <meta property="og:release_date" content="%s"/>
-            <meta property="og:modified_time" content="%s"/>
-            <meta property="og:author" content="%s"/>
+            <meta property="og:type" content="article" />
+            <meta property="og:title" content="%s" />
+            <meta property="og:description" content="%s" />
+            <meta property="og:image" content="%s" />
+            <meta property="og:url" content="%s" />
+            <meta property="og:release_date" content="%s" />
+            <meta property="og:modified_time" content="%s" />
+            <meta property="og:author" content="%s" />
             """.formatted(HtmlEscape.escapeHtml5(seoData.title()),
             HtmlEscape.escapeHtml5(seoData.description()), seoData.coverUrl(), seoData.postUrl(),
             seoData.baiduPubDate(), seoData.baiduUpdDate(),
@@ -295,8 +300,8 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
 
     private String genBytedanceMeta(String publishDate, String updateDate) {
         return """
-            <meta property="bytedance:published_time" content="%s"/>
-            <meta property="bytedance:updated_time" content="%s"/>
+            <meta property="bytedance:published_time" content="%s" />
+            <meta property="bytedance:updated_time" content="%s" />
             """.formatted(publishDate, updateDate);
     }
 
@@ -350,6 +355,39 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             seoData.googleUpdDate(), JsonEscape.escapeJson(seoData.author()),
             JsonEscape.escapeJson(seoData.siteName()), seoData.siteLogo(), seoData.coverUrl(),
             seoData.postUrl(), JsonEscape.escapeJson(seoData.keywords()));
+    }
+
+    private String genTwitterCards(SeoData seoData, String twitterCardsType,
+        String twitterSiteUsername, String twitterCreatorUsername) {
+        StringBuilder sb = new StringBuilder();
+
+        // card 标签始终添加
+        sb.append("<meta name=\"twitter:card\" content=\"")
+            .append(HtmlEscape.escapeHtml5(twitterCardsType)).append("\" />\n");
+
+        // 如果站点用户名非空，添加 site 标签
+        if (twitterSiteUsername != null && !twitterSiteUsername.trim().isEmpty()) {
+            sb.append("<meta name=\"twitter:site\" content=\"@")
+                .append(HtmlEscape.escapeHtml5(twitterSiteUsername)).append("\" />\n");
+        }
+
+        // 如果创作者用户名非空，添加 creator 标签
+        if (twitterCreatorUsername != null && !twitterCreatorUsername.trim().isEmpty()) {
+            sb.append("<meta name=\"twitter:creator\" content=\"@")
+                .append(HtmlEscape.escapeHtml5(twitterCreatorUsername)).append("\" />\n");
+        }
+
+        // 标题、描述、图片标签始终添加
+        sb.append("<meta name=\"twitter:title\" content=\"")
+            .append(HtmlEscape.escapeHtml5(seoData.title())).append("\" />\n");
+
+        sb.append("<meta name=\"twitter:description\" content=\"")
+            .append(HtmlEscape.escapeHtml5(seoData.description())).append("\" />\n");
+
+        sb.append("<meta name=\"twitter:image\" content=\"")
+            .append(HtmlEscape.escapeHtml5(seoData.coverUrl())).append("\" />\n");
+
+        return sb.toString();
     }
 
     private record SeoData(String title, String description, String coverUrl, String postUrl,
