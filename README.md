@@ -65,6 +65,23 @@
 | 豆瓣   | `douban`  | 站点信息 + 路由 title 变量 | [plugin-douban](https://github.com/chengzhongxue/plugin-douban)                   |
 | 番剧   | `bangumi` | 站点信息               | [halo-plugin-bangumi-data](https://github.com/ShiinaKin/halo-plugin-bangumi-data) |
 
+### 各页面输出字段差异
+
+并非所有页面都拥有完整的 SEO 字段。当某个字段为空时，对应的 meta/script 标签会被**自动省略**（不输出空值标签），以保证结构化数据的有效性。
+
+| 页面类型   | `og:type` | Schema.org `@type` | 发布/更新时间 | 作者 |   关键词   | 说明                         |
+|--------|-----------|--------------------|:-------:|:--:|:-------:|----------------------------|
+| 文章详情页  | `article` | `BlogPosting`      |    ✅    | ✅  | ✅ 文章标签  | 字段最完整的页面类型                 |
+| 独立页面   | `article` | `BlogPosting`      |    ✅    | ✅  | ✅ 站点关键词 | 独立页面无标签，关键词回退到站点级          |
+| 分类详情页  | `website` | `WebPage`          |    ❌    | ❌  |  ✅ 分类名  | 分类无发布时间和作者                 |
+| 标签详情页  | `website` | `WebPage`          |    ❌    | ❌  |  ✅ 标签名  | 标签无发布时间和作者                 |
+| 作者页    | `profile` | `ProfilePage`      |    ❌    | ✅  |  ✅ 作者名  | 作者页无发布时间                   |
+| 列表/聚合页 | `website` | `WebPage`          |    ❌    | ❌  | ✅ 站点关键词 | 首页、分类列表、标签列表、归档页、所有第三方插件页面 |
+
+> **省略规则**：当发布/更新时间为空时，`og:release_date`、`og:modified_time`、`bytedance:published_time`、
+`bytedance:updated_time` 不输出；百度时间因子 `<script>` 中的 `pubDate`/`upDate` 字段不输出，若两者均为空则整个百度 script
+> 标签不输出；Schema.org JSON-LD 中的 `datePublished`/`dateModified` 字段不输出。当作者为空时，`og:author` 不输出。
+
 ## 支持注入的数据类型
 
 ### Link 标签
