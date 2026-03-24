@@ -6,7 +6,8 @@
 
 - **演示站点**：[https://www.lik.cc/](https://www.lik.cc/)
 - **文档**：[https://docs.lik.cc/](https://docs.lik.cc/)
-- **QQ 交流群**：[![QQ群](https://www.lik.cc/upload/iShot_2025-03-03_16.03.00.png)](https://www.lik.cc/upload/iShot_2025-03-03_16.03.00.png)
+- **QQ 交流群
+  **：[![QQ群](https://www.lik.cc/upload/iShot_2025-03-03_16.03.00.png)](https://www.lik.cc/upload/iShot_2025-03-03_16.03.00.png)
 
 ## 功能特性
 
@@ -17,45 +18,80 @@
 ![结构化数据注入效果示例](https://www.lik.cc/upload/Google%20Chrome%202025-06-28%2011.51.07.png)
 
 ### 🎯 智能 SEO 注入
+
 - **多平台支持**：支持 Google、百度、字节、OG 等主流搜索引擎的结构化数据格式
 - **动态内容**：根据页面类型和内容自动填充标题、描述、作者、标签等字段
 
 ### 🔧 配置灵活
+
 - 支持启用/禁用搜索引擎优化功能
 - 可配置默认封面图片
 - 自动获取站点信息（标题、Logo、关键词等）
 
 ### 🛡️ 性能优化
+
 - 普通用户访问时零性能影响
 - 结构化数据格式紧凑，无多余注释
 - 异常处理完善，保证系统稳定性
 
 ## 支持注入的页面类型
 
-- [文章详情页](https://docs.halo.run/developer-guide/theme/template-variables/post)
+> **数据来源说明**：「站点信息」指使用 Halo 后台设置的站点标题、Logo、SEO 关键词和描述等全局配置来生成 SEO
+> 标签，适用于没有具体内容实体的列表/聚合页面；其他数据来源（如 Post、Category 等）表示通过 Halo Extension API
+> 获取对应的强类型对象，从中提取标题、摘要、封面、作者、发布时间等精确字段。
+
+### Halo 内置页面
+
+| 页面类型  | 模板 ID        | 数据来源              | 文档                                                                                |
+|-------|--------------|-------------------|-----------------------------------------------------------------------------------|
+| 首页    | `index`      | 站点信息              | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/index_)     |
+| 文章详情页 | `post`       | Post + User + Tag | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/post)       |
+| 独立页面  | `page`       | SinglePage + User | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/page)       |
+| 分类列表页 | `categories` | 站点信息              | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/categories) |
+| 分类详情页 | `category`   | Category          | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/category)   |
+| 标签列表页 | `tags`       | 站点信息              | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/tags)       |
+| 标签详情页 | `tag`        | Tag               | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/tag)        |
+| 归档页   | `archives`   | 站点信息              | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/archives)   |
+| 作者页   | `author`     | User              | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/author)     |
+
+### 第三方插件页面
+
+| 页面类型 | 模板 ID     | 数据来源               | 插件                                                                                |
+|------|-----------|--------------------|-----------------------------------------------------------------------------------|
+| 瞬间列表 | `moments` | 站点信息               | [plugin-moments](https://github.com/halo-sigs/plugin-moments)                     |
+| 瞬间详情 | `moment`  | 站点信息               | [plugin-moments](https://github.com/halo-sigs/plugin-moments)                     |
+| 图库   | `photos`  | 站点信息               | [plugin-photos](https://github.com/halo-sigs/plugin-photos)                       |
+| 朋友圈  | `friends` | 站点信息               | [plugin-friends-new](https://github.com/chengzhongxue/plugin-friends-new)         |
+| 豆瓣   | `douban`  | 站点信息 + 路由 title 变量 | [plugin-douban](https://github.com/chengzhongxue/plugin-douban)                   |
+| 番剧   | `bangumi` | 站点信息               | [halo-plugin-bangumi-data](https://github.com/ShiinaKin/halo-plugin-bangumi-data) |
 
 ## 支持注入的数据类型
 
 ### Link 标签
+
 - canonical 链接
 - alternate 链接
 
 ### Open Graph (OG)
+
 - 标题、描述、封面图
 - 作者、标签、发布时间
 - 站点信息
 
 ### 百度结构化数据
+
 - 文章标题、摘要、封面
 - 作者、分类、发布时间
 - 站点名称、Logo
 
 ### 字节跳动结构化数据
+
 - 内容标题、描述、图片
 - 作者信息、发布时间
 - 站点标识
 
 ### Google JSON-LD (schema.org)
+
 - 文章结构化数据
 - 作者信息
 - 发布时间（带时区）
