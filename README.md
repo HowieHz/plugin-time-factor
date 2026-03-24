@@ -6,8 +6,7 @@
 
 - **演示站点**：[https://www.lik.cc/](https://www.lik.cc/)
 - **文档**：[https://docs.lik.cc/](https://docs.lik.cc/)
-- **QQ 交流群
-  **：[![QQ群](https://www.lik.cc/upload/iShot_2025-03-03_16.03.00.png)](https://www.lik.cc/upload/iShot_2025-03-03_16.03.00.png)
+- **QQ 交流群**：[![QQ群](https://www.lik.cc/upload/iShot_2025-03-03_16.03.00.png)](https://www.lik.cc/upload/iShot_2025-03-03_16.03.00.png)
 
 ## 功能特性
 
