@@ -32,6 +32,5 @@ public interface SettingConfigGetter {
         private String twitterCreatorUserId;
         private String defaultImage;
         private String defaultAuthor;
-        private String titleFormat;
     }
 }

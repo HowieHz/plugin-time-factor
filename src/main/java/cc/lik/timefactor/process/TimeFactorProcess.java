@@ -15,6 +15,9 @@ import org.springframework.stereotype.Component;
 import org.thymeleaf.context.ITemplateContext;
 import org.thymeleaf.model.IModel;
 import org.thymeleaf.model.IModelFactory;
+import org.thymeleaf.model.IOpenElementTag;
+import org.thymeleaf.model.IStandaloneElementTag;
+import org.thymeleaf.model.IText;
 import org.thymeleaf.processor.element.IElementModelStructureHandler;
 import org.unbescape.html.HtmlEscape;
 import org.unbescape.json.JsonEscape;
@@ -123,19 +126,6 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
     private static final DateTimeFormatter GOOGLE_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
 
-    // ======================== 页面标签常量 ========================
-    private static final String PAGE_LABEL_INDEX = "首页";
-    private static final String PAGE_LABEL_CATEGORIES = "分类";
-    private static final String PAGE_LABEL_ARCHIVES = "归档";
-    private static final String PAGE_LABEL_TAGS = "标签";
-    private static final String PAGE_LABEL_MOMENTS = "瞬间";
-    private static final String PAGE_LABEL_PHOTOS = "图库";
-    private static final String PAGE_LABEL_FRIENDS = "朋友圈";
-    private static final String PAGE_LABEL_DOUBAN = "豆瓣";
-    private static final String PAGE_LABEL_BANGUMI = "番剧";
-    private static final String TAG_DESC_PREFIX = "标签: ";
-    private static final String CATEGORY_DESC_PREFIX = "分类: ";
-    private static final String AUTHOR_DESC_PREFIX = "作者: ";
 
     private final ReactiveExtensionClient client;
     private final SettingConfigGetter settingConfigGetter;
@@ -206,7 +196,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * <a href="https://docs.halo.run/developer-guide/theme/template-variables/index_">首页模板变量</a>
      */
     private Mono<Void> processIndexSeoData(ITemplateContext context, IModel model) {
-        return buildListPageSeoData(context, model, PAGE_LABEL_INDEX, rules -> "/");
+        return buildListPageSeoData(context, model, rules -> "/");
     }
 
     /**
@@ -219,7 +209,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * <a href="https://docs.halo.run/developer-guide/theme/template-variables/categories">分类列表模板变量</a>
      */
     private Mono<Void> processCategoriesSeoData(ITemplateContext context, IModel model) {
-        return buildListPageSeoData(context, model, PAGE_LABEL_CATEGORIES,
+        return buildListPageSeoData(context, model,
             rules -> Optional.ofNullable(rules.getCategories()).orElse("/categories"));
     }
 
@@ -233,7 +223,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * <a href="https://docs.halo.run/developer-guide/theme/template-variables/archives">归档模板变量</a>
      */
     private Mono<Void> processArchivesSeoData(ITemplateContext context, IModel model) {
-        return buildListPageSeoData(context, model, PAGE_LABEL_ARCHIVES,
+        return buildListPageSeoData(context, model,
             rules -> Optional.ofNullable(rules.getArchives()).orElse("/archives"));
     }
 
@@ -247,7 +237,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * <a href="https://docs.halo.run/developer-guide/theme/template-variables/tags">标签列表模板变量</a>
      */
     private Mono<Void> processTagsSeoData(ITemplateContext context, IModel model) {
-        return buildListPageSeoData(context, model, PAGE_LABEL_TAGS,
+        return buildListPageSeoData(context, model,
             rules -> Optional.ofNullable(rules.getTags()).orElse("/tags"));
     }
 
@@ -261,7 +251,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @see <a href="https://github.com/halo-sigs/plugin-moments">plugin-moments</a>
      */
     private Mono<Void> processMomentsSeoData(ITemplateContext context, IModel model) {
-        return buildListPageSeoData(context, model, PAGE_LABEL_MOMENTS, rules -> "/moments");
+        return buildListPageSeoData(context, model, rules -> "/moments");
     }
 
     /**
@@ -273,7 +263,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      */
     private Mono<Void> processMomentSeoData(ITemplateContext context, IModel model) {
         // MomentVo 在上下文中是延迟加载的 Mono 对象，无法直接获取 metadata.name，降级使用站点信息
-        return buildListPageSeoData(context, model, PAGE_LABEL_MOMENTS, rules -> "/moments");
+        return buildListPageSeoData(context, model, rules -> "/moments");
     }
 
     /**
@@ -285,7 +275,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @see <a href="https://github.com/halo-sigs/plugin-photos">plugin-photos</a>
      */
     private Mono<Void> processPhotosSeoData(ITemplateContext context, IModel model) {
-        return buildListPageSeoData(context, model, PAGE_LABEL_PHOTOS, rules -> "/photos");
+        return buildListPageSeoData(context, model, rules -> "/photos");
     }
 
     /**
@@ -298,7 +288,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @see <a href="https://github.com/chengzhongxue/plugin-friends-new">plugin-friends-new</a>
      */
     private Mono<Void> processFriendsSeoData(ITemplateContext context, IModel model) {
-        return buildListPageSeoData(context, model, PAGE_LABEL_FRIENDS, rules -> "/friends");
+        return buildListPageSeoData(context, model, rules -> "/friends");
     }
 
     /**
@@ -312,10 +302,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @see <a href="https://github.com/chengzhongxue/plugin-douban">plugin-douban</a>
      */
     private Mono<Void> processDoubanSeoData(ITemplateContext context, IModel model) {
-        // 豆瓣路由设置了 title 上下文变量（DoubanRouter.getDoubanTitle），优先使用
-        var doubanTitle = Optional.ofNullable(context.getVariable("title")).map(Object::toString)
-            .filter(s -> !s.isBlank()).orElse(PAGE_LABEL_DOUBAN);
-        return buildListPageSeoData(context, model, doubanTitle, rules -> "/douban");
+        return buildListPageSeoData(context, model, rules -> "/douban");
     }
 
     /**
@@ -330,7 +317,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * <a href="https://github.com/ShiinaKin/halo-plugin-bangumi-data">halo-plugin-bangumi-data</a>
      */
     private Mono<Void> processBangumiSeoData(ITemplateContext context, IModel model) {
-        return buildListPageSeoData(context, model, PAGE_LABEL_BANGUMI, rules -> "/bangumi");
+        return buildListPageSeoData(context, model, rules -> "/bangumi");
     }
 
     // ======================== 详情页 SEO 处理器 ========================
@@ -359,8 +346,11 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
         if (postName == null) {
             return Mono.empty();
         }
-        return client.fetch(Post.class, postName).flatMap(post -> buildSeoDataForPost(post).flatMap(
-            seoData -> generateSeoTags(seoData, model, modelFactory)));
+        var title = extractTitleFromModel(model);
+        var description = extractMetaDescriptionFromModel(model);
+        return client.fetch(Post.class, postName).flatMap(
+            post -> buildSeoDataForPost(post, title, description).flatMap(
+                seoData -> generateSeoTags(seoData, model, modelFactory)));
     }
 
     /**
@@ -385,8 +375,10 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
         if (categoryName == null) {
             return Mono.empty();
         }
+        var title = extractTitleFromModel(model);
+        var description = extractMetaDescriptionFromModel(model);
         return client.fetch(Category.class, categoryName).flatMap(
-            category -> buildSeoDataForCategory(category).flatMap(
+            category -> buildSeoDataForCategory(category, title, description).flatMap(
                 seoData -> generateSeoTags(seoData, model, modelFactory)));
     }
 
@@ -410,8 +402,11 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
         if (tagName == null) {
             return Mono.empty();
         }
-        return client.fetch(Tag.class, tagName).flatMap(tag -> buildSeoDataForTag(tag).flatMap(
-            seoData -> generateSeoTags(seoData, model, modelFactory)));
+        var title = extractTitleFromModel(model);
+        var description = extractMetaDescriptionFromModel(model);
+        return client.fetch(Tag.class, tagName).flatMap(
+            tag -> buildSeoDataForTag(tag, title, description).flatMap(
+                seoData -> generateSeoTags(seoData, model, modelFactory)));
     }
 
     /**
@@ -436,8 +431,10 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
         if (pageName == null) {
             return Mono.empty();
         }
+        var title = extractTitleFromModel(model);
+        var description = extractMetaDescriptionFromModel(model);
         return client.fetch(SinglePage.class, pageName).flatMap(
-            page -> buildSeoDataForSinglePage(page).flatMap(
+            page -> buildSeoDataForSinglePage(page, title, description).flatMap(
                 seoData -> generateSeoTags(seoData, model, modelFactory)));
     }
 
@@ -461,8 +458,10 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
         if (userName == null) {
             return Mono.empty();
         }
+        var title = extractTitleFromModel(model);
+        var description = extractMetaDescriptionFromModel(model);
         return client.fetch(User.class, userName).flatMap(
-            user -> buildSeoDataForAuthor(user).flatMap(
+            user -> buildSeoDataForAuthor(user, title, description).flatMap(
                 seoData -> generateSeoTags(seoData, model, modelFactory)));
     }
 
@@ -483,12 +482,14 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      *
      * @param context Thymeleaf 模板上下文
      * @param model HTML 输出模型
-     * @param pageTitle 页面语义标题，如 "首页"、"分类"、"标签"
      * @param pathProvider 页面路径提供函数，接收 {@link SystemSetting.ThemeRouteRules} 以支持可配置路由前缀
      */
     private Mono<Void> buildListPageSeoData(ITemplateContext context, IModel model,
-        String pageTitle, Function<SystemSetting.ThemeRouteRules, String> pathProvider) {
+        Function<SystemSetting.ThemeRouteRules, String> pathProvider) {
         var modelFactory = context.getModelFactory();
+        // 从已渲染的 head 中读取，主题负责内容，此处只是复用
+        var title = extractTitleFromModel(model);
+        var description = extractMetaDescriptionFromModel(model);
 
         return Mono.zip(settingConfigGetter.getBasicConfig(), systemInfoGetter.get(),
             getThemeRouteRules()).flatMap(tuple -> {
@@ -498,14 +499,14 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
 
             var siteName = systemInfo.getTitle();
             var siteLogo = processPermalink(systemInfo.getLogo());
-
-            var title = formatTitle(pageTitle, siteName, config.getTitleFormat());
-
-            // 描述优先级：站点 SEO 描述 > 页面标题
             var siteDesc =
                 Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
                     .orElse(null);
-            var description = firstNonBlank(siteDesc, pageTitle);
+
+            // 标题：页面 <title> → 站点标题 → 空
+            var finalTitle = firstNonBlank(title, siteName);
+            // 描述：页面 <meta name="description"> → 站点描述 → 空
+            var finalDesc = firstNonBlank(description, siteDesc);
 
             // 通过 ExternalLinkProcessor 将相对路径转为完整的外部 URL
             var pageUrl = externalLinkProcessor.processLink(pathProvider.apply(routeRules));
@@ -519,12 +520,12 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             // 作者优先使用配置的默认作者，回退到站点名称；pageType 为 website
             var author = firstNonBlank(config.getDefaultAuthor(), siteName);
             var seoData =
-                new SeoData(title, description, coverUrl, pageUrl, author, null, null, null, null,
-                    siteName, siteLogo, keywords, "website");
+                new SeoData(finalTitle, finalDesc, coverUrl, pageUrl, author, null, null, null,
+                    null, siteName, siteLogo, keywords, "website");
 
             return generateSeoTags(seoData, model, modelFactory);
         }).onErrorResume(error -> {
-            log.warn("Failed to build list page SEO for: {}", pageTitle, error);
+            log.warn("Failed to build list page SEO", error);
             return Mono.empty();
         });
     }
@@ -551,7 +552,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @param post 文章 Extension 对象
      * @return 包含完整 SEO 数据的 Mono
      */
-    private Mono<SeoData> buildSeoDataForPost(Post post) {
+    private Mono<SeoData> buildSeoDataForPost(Post post, String title, String description) {
         // 并行获取：文章所有者、文章标签、插件配置、系统信息
         return Mono.zip(client.fetch(User.class, post.getSpec().getOwner()), findTagForPost(post),
             settingConfigGetter.getBasicConfig(), systemInfoGetter.get()).map(tuple -> {
@@ -567,8 +568,13 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             // status 字段在 Reconciler 首次处理前为 null，使用 getStatusOrDefault() 安全获取
             var status = post.getStatusOrDefault();
             var postUrl = processPermalink(status.getPermalink());
-            var title = post.getSpec().getTitle();
-            var description = status.getExcerpt();
+            // 标题/描述来自 <title>/<meta description>，回退到站点级
+            var siteName = systemInfo.getTitle();
+            var siteDesc =
+                Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
+                    .orElse(null);
+            var finalTitle = firstNonBlank(title, siteName);
+            var finalDesc = firstNonBlank(description, siteDesc);
             // 封面：优先文章封面，回退到插件默认封面
             var coverUrl = processPermalink(
                 firstNonBlank(post.getSpec().getCover(), config.getDefaultImage()));
@@ -577,7 +583,6 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             var updateInstant = status.getLastModifyTime();
             var zoneId = ZoneId.systemDefault();
 
-            var siteName = systemInfo.getTitle();
             var siteLogo = processPermalink(systemInfo.getLogo());
             var siteKeywords =
                 Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getKeywords)
@@ -585,7 +590,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             // 关键词：优先文章标签，回退到站点 SEO 关键词
             var finalKeywords = hasValue(keywords) ? keywords : siteKeywords;
 
-            return new SeoData(title, description, coverUrl, postUrl, author,
+            return new SeoData(finalTitle, finalDesc, coverUrl, postUrl, author,
                 formatDateTime(publishInstant, BAIDU_FORMATTER, zoneId),
                 formatDateTime(updateInstant, BAIDU_FORMATTER, zoneId),
                 formatDateTime(publishInstant, GOOGLE_FORMATTER, zoneId),
@@ -616,8 +621,8 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @param page 独立页面 Extension 对象
      * @return 包含 SEO 数据的 Mono
      */
-    private Mono<SeoData> buildSeoDataForSinglePage(SinglePage page) {
-        // 并行获取：页面所有者、插件配置、系统信息
+    private Mono<SeoData> buildSeoDataForSinglePage(SinglePage page, String title,
+        String description) {
         return Mono.zip(client.fetch(User.class, page.getSpec().getOwner()),
             settingConfigGetter.getBasicConfig(), systemInfoGetter.get()).map(tuple -> {
             var user = tuple.getT1();
@@ -627,11 +632,8 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             var author = Optional.of(user).map(User::getSpec).map(User.UserSpec::getDisplayName)
                 .orElse(page.getSpec().getOwner());
 
-            // status 字段在 Reconciler 首次处理前为 null，使用 getStatusOrDefault() 安全获取
             var status = page.getStatusOrDefault();
             var pageUrl = processPermalink(status.getPermalink());
-            var title = page.getSpec().getTitle();
-            var description = status.getExcerpt();
             var coverUrl = processPermalink(
                 firstNonBlank(page.getSpec().getCover(), config.getDefaultImage()));
 
@@ -641,12 +643,15 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
 
             var siteName = systemInfo.getTitle();
             var siteLogo = processPermalink(systemInfo.getLogo());
+            var siteDesc =
+                Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
+                    .orElse(null);
             var keywords =
                 Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getKeywords)
                     .orElse(null);
 
-            return new SeoData(title, description, coverUrl, pageUrl, author,
-                formatDateTime(publishInstant, BAIDU_FORMATTER, zoneId),
+            return new SeoData(firstNonBlank(title, siteName), firstNonBlank(description, siteDesc),
+                coverUrl, pageUrl, author, formatDateTime(publishInstant, BAIDU_FORMATTER, zoneId),
                 formatDateTime(updateInstant, BAIDU_FORMATTER, zoneId),
                 formatDateTime(publishInstant, GOOGLE_FORMATTER, zoneId),
                 formatDateTime(updateInstant, GOOGLE_FORMATTER, zoneId), siteName, siteLogo,
@@ -672,30 +677,27 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @param category 分类 Extension 对象
      * @return 包含 SEO 数据的 Mono
      */
-    private Mono<SeoData> buildSeoDataForCategory(Category category) {
+    private Mono<SeoData> buildSeoDataForCategory(Category category, String title,
+        String description) {
         return Mono.zip(settingConfigGetter.getBasicConfig(), systemInfoGetter.get()).map(tuple -> {
             var config = tuple.getT1();
             var systemInfo = tuple.getT2();
 
-            var displayName = category.getSpec().getDisplayName();
             var siteName = systemInfo.getTitle();
-            var title = formatTitle(displayName, siteName, config.getTitleFormat());
-
-            // 分类有 description 字段，回退到 "分类: displayName"
-            var description = firstNonBlank(category.getSpec().getDescription(),
-                CATEGORY_DESC_PREFIX + displayName);
-
-            // status 字段在 Reconciler 首次处理前为 null，使用 getStatusOrDefault() 安全获取
+            var siteDesc =
+                Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
+                    .orElse(null);
             var pageUrl = processPermalink(category.getStatusOrDefault().getPermalink());
             var coverUrl = processPermalink(
                 firstNonBlank(category.getSpec().getCover(), config.getDefaultImage(),
                     systemInfo.getLogo()));
             var siteLogo = processPermalink(systemInfo.getLogo());
-
-            // 分类没有独立的作者和发布时间，作者优先使用默认作者，回退到站点名称；pageType 为 website
             var author = firstNonBlank(config.getDefaultAuthor(), siteName);
-            return new SeoData(title, description, coverUrl, pageUrl, author, null, null, null,
-                null, siteName, siteLogo, displayName, "website");
+            var displayName = category.getSpec().getDisplayName();
+
+            return new SeoData(firstNonBlank(title, siteName), firstNonBlank(description, siteDesc),
+                coverUrl, pageUrl, author, null, null, null, null, siteName, siteLogo, displayName,
+                "website");
         });
     }
 
@@ -717,29 +719,26 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @param tag 标签 Extension 对象
      * @return 包含 SEO 数据的 Mono
      */
-    private Mono<SeoData> buildSeoDataForTag(Tag tag) {
+    private Mono<SeoData> buildSeoDataForTag(Tag tag, String title, String description) {
         return Mono.zip(settingConfigGetter.getBasicConfig(), systemInfoGetter.get()).map(tuple -> {
             var config = tuple.getT1();
             var systemInfo = tuple.getT2();
 
-            var displayName = tag.getSpec().getDisplayName();
             var siteName = systemInfo.getTitle();
-            var title = formatTitle(displayName, siteName, config.getTitleFormat());
-            // 描述：优先 Tag 自身的 description，回退到 "标签: displayName"
-            var description =
-                firstNonBlank(tag.getSpec().getDescription(), TAG_DESC_PREFIX + displayName);
-
-            // status 字段在 Reconciler 首次处理前为 null，使用 getStatusOrDefault() 安全获取
+            var siteDesc =
+                Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
+                    .orElse(null);
             var pageUrl = processPermalink(tag.getStatusOrDefault().getPermalink());
             var coverUrl = processPermalink(
                 firstNonBlank(tag.getSpec().getCover(), config.getDefaultImage(),
                     systemInfo.getLogo()));
             var siteLogo = processPermalink(systemInfo.getLogo());
-
-            // 标签没有独立的作者和发布时间；作者优先使用默认作者，回退到站点名称；pageType 为 website
             var author = firstNonBlank(config.getDefaultAuthor(), siteName);
-            return new SeoData(title, description, coverUrl, pageUrl, author, null, null, null,
-                null, siteName, siteLogo, displayName, "website");
+            var displayName = tag.getSpec().getDisplayName();
+
+            return new SeoData(firstNonBlank(title, siteName), firstNonBlank(description, siteDesc),
+                coverUrl, pageUrl, author, null, null, null, null, siteName, siteLogo, displayName,
+                "website");
         });
     }
 
@@ -762,18 +761,16 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @param user 用户 Extension 对象
      * @return 包含 SEO 数据的 Mono
      */
-    private Mono<SeoData> buildSeoDataForAuthor(User user) {
+    private Mono<SeoData> buildSeoDataForAuthor(User user, String title, String description) {
         return Mono.zip(settingConfigGetter.getBasicConfig(), systemInfoGetter.get()).map(tuple -> {
             var config = tuple.getT1();
             var systemInfo = tuple.getT2();
 
-            var displayName = user.getSpec().getDisplayName();
             var siteName = systemInfo.getTitle();
-            var title = formatTitle(displayName, siteName, config.getTitleFormat());
-            var description =
-                firstNonBlank(user.getSpec().getBio(), AUTHOR_DESC_PREFIX + displayName);
-
-            // User 没有 status.permalink，手动构造作者归档页 URL
+            var siteDesc =
+                Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
+                    .orElse(null);
+            var displayName = user.getSpec().getDisplayName();
             var pageUrl =
                 externalLinkProcessor.processLink("/authors/" + user.getMetadata().getName());
             var coverUrl = processPermalink(
@@ -781,9 +778,9 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
                     systemInfo.getLogo()));
             var siteLogo = processPermalink(systemInfo.getLogo());
 
-            // 作者页的 author 字段即为用户自身；pageType 为 profile
-            return new SeoData(title, description, coverUrl, pageUrl, displayName, null, null, null,
-                null, siteName, siteLogo, displayName, "profile");
+            return new SeoData(firstNonBlank(title, siteName), firstNonBlank(description, siteDesc),
+                coverUrl, pageUrl, displayName, null, null, null, null, siteName, siteLogo,
+                displayName, "profile");
         });
     }
 
@@ -1172,26 +1169,6 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
     }
 
     /**
-     * 根据配置模板格式化页面标题。
-     *
-     * <p>用 {@code %TITLE%} 替换页面标题，{@code %SITENAME%} 替换站点名称。
-     * 当站点名称为空时，直接返回 title，避免出现 "标题 - " 这类残缺输出。
-     * 当 format 为空时同样退回到 title。
-     *
-     * @param title 页面标题
-     * @param siteName 站点名称
-     * @param format 配置的标题格式模板，如 {@code "%TITLE% - %SITENAME%"}
-     * @return 格式化后的标题
-     */
-    private String formatTitle(String title, String siteName, String format) {
-        var t = hasValue(title) ? title : "";
-        if (!hasValue(format) || !hasValue(siteName)) {
-            return t;
-        }
-        return format.replace("%TITLE%", t).replace("%SITENAME%", siteName);
-    }
-
-    /**
      * 判断字符串是否有实际内容（非 null 且非空白）。
      * 用于输出阶段决定是否生成对应的 SEO 标签：无值则跳过，避免输出空标签。
      */
@@ -1233,6 +1210,39 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             }
         }
         return "";
+    }
+
+    /**
+     * 从 head 模型中提取 {@code <title>} 标签的文本内容。
+     *
+     * @return 标题文本，不存在时返回 null
+     */
+    private String extractTitleFromModel(IModel model) {
+        for (int i = 0; i < model.size() - 1; i++) {
+            if (model.get(i) instanceof IOpenElementTag tag && "title".equalsIgnoreCase(
+                tag.getElementCompleteName()) && model.get(i + 1) instanceof IText text) {
+                var t = HtmlEscape.unescapeHtml(text.getText()).strip();
+                return t.isBlank() ? null : t;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 从 head 模型中提取 {@code <meta name="description">} 的 content 属性值。
+     *
+     * @return 描述文本，不存在时返回 null
+     */
+    private String extractMetaDescriptionFromModel(IModel model) {
+        for (int i = 0; i < model.size(); i++) {
+            if (model.get(i) instanceof IStandaloneElementTag tag && "meta".equalsIgnoreCase(
+                tag.getElementCompleteName()) && "description".equalsIgnoreCase(
+                tag.getAttributeValue("name"))) {
+                var content = tag.getAttributeValue("content");
+                return (content != null && !content.isBlank()) ? content : null;
+            }
+        }
+        return null;
     }
 
     // ======================== 数据结构 ========================

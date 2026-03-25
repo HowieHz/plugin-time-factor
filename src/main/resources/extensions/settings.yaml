@@ -162,10 +162,3 @@ spec:
           key: defaultAuthor
           value: ""
           help: "列表页、分类页、标签页等无具体作者的页面使用；留空时回退到站点名称"
-        - $formkit: text
-          label: 标题格式
-          name: titleFormat
-          id: titleFormat
-          key: titleFormat
-          value: "%TITLE% - %SITENAME%"
-          help: "列表页、分类页、标签页、作者页的标题格式模板；%TITLE% 为页面标题，%SITENAME% 为站点名称；站点名称为空时自动退回仅显示 %TITLE%"
