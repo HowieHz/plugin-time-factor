@@ -302,7 +302,10 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @see <a href="https://github.com/chengzhongxue/plugin-douban">plugin-douban</a>
      */
     private Mono<Void> processDoubanSeoData(ITemplateContext context, IModel model) {
-        return buildListPageSeoData(context, model, rules -> "/douban");
+        // 豆瓣路由在上下文中注入了 title 变量，作为 <title> 提取失败时的中间回退
+        var contextTitle = Optional.ofNullable(context.getVariable("title")).map(Object::toString)
+            .filter(s -> !s.isBlank()).orElse(null);
+        return buildListPageSeoData(context, model, rules -> "/douban", contextTitle, null);
     }
 
     /**
@@ -486,6 +489,12 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      */
     private Mono<Void> buildListPageSeoData(ITemplateContext context, IModel model,
         Function<SystemSetting.ThemeRouteRules, String> pathProvider) {
+        return buildListPageSeoData(context, model, pathProvider, null, null);
+    }
+
+    private Mono<Void> buildListPageSeoData(ITemplateContext context, IModel model,
+        Function<SystemSetting.ThemeRouteRules, String> pathProvider, String intermediateTitle,
+        String intermediateDesc) {
         var modelFactory = context.getModelFactory();
         // 从已渲染的 head 中读取，主题负责内容，此处只是复用
         var title = extractTitleFromModel(model);
@@ -503,10 +512,10 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
                 Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
                     .orElse(null);
 
-            // 标题：页面 <title> → 站点标题 → 空
-            var finalTitle = firstNonBlank(title, siteName);
-            // 描述：页面 <meta name="description"> → 站点描述 → 空
-            var finalDesc = firstNonBlank(description, siteDesc);
+            // 标题：页面 <title> → 中间值（实体/插件上下文变量） → 站点标题 → 空
+            var finalTitle = firstNonBlank(title, intermediateTitle, siteName);
+            // 描述：页面 <meta name="description"> → 中间值 → 站点描述 → 空
+            var finalDesc = firstNonBlank(description, intermediateDesc, siteDesc);
 
             // 通过 ExternalLinkProcessor 将相对路径转为完整的外部 URL
             var pageUrl = externalLinkProcessor.processLink(pathProvider.apply(routeRules));
@@ -568,13 +577,13 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             // status 字段在 Reconciler 首次处理前为 null，使用 getStatusOrDefault() 安全获取
             var status = post.getStatusOrDefault();
             var postUrl = processPermalink(status.getPermalink());
-            // 标题/描述来自 <title>/<meta description>，回退到站点级
+            // 标题/描述：页面 <title>/<meta description> → 实体固定值 → 站点级
             var siteName = systemInfo.getTitle();
             var siteDesc =
                 Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
                     .orElse(null);
-            var finalTitle = firstNonBlank(title, siteName);
-            var finalDesc = firstNonBlank(description, siteDesc);
+            var finalTitle = firstNonBlank(title, post.getSpec().getTitle(), siteName);
+            var finalDesc = firstNonBlank(description, status.getExcerpt(), siteDesc);
             // 封面：优先文章封面，回退到插件默认封面
             var coverUrl = processPermalink(
                 firstNonBlank(post.getSpec().getCover(), config.getDefaultImage()));
@@ -650,8 +659,9 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
                 Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getKeywords)
                     .orElse(null);
 
-            return new SeoData(firstNonBlank(title, siteName), firstNonBlank(description, siteDesc),
-                coverUrl, pageUrl, author, formatDateTime(publishInstant, BAIDU_FORMATTER, zoneId),
+            return new SeoData(firstNonBlank(title, page.getSpec().getTitle(), siteName),
+                firstNonBlank(description, status.getExcerpt(), siteDesc), coverUrl, pageUrl,
+                author, formatDateTime(publishInstant, BAIDU_FORMATTER, zoneId),
                 formatDateTime(updateInstant, BAIDU_FORMATTER, zoneId),
                 formatDateTime(publishInstant, GOOGLE_FORMATTER, zoneId),
                 formatDateTime(updateInstant, GOOGLE_FORMATTER, zoneId), siteName, siteLogo,
@@ -695,8 +705,9 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             var author = firstNonBlank(config.getDefaultAuthor(), siteName);
             var displayName = category.getSpec().getDisplayName();
 
-            return new SeoData(firstNonBlank(title, siteName), firstNonBlank(description, siteDesc),
-                coverUrl, pageUrl, author, null, null, null, null, siteName, siteLogo, displayName,
+            return new SeoData(firstNonBlank(title, category.getSpec().getDisplayName(), siteName),
+                firstNonBlank(description, category.getSpec().getDescription(), siteDesc), coverUrl,
+                pageUrl, author, null, null, null, null, siteName, siteLogo, displayName,
                 "website");
         });
     }
@@ -736,8 +747,9 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             var author = firstNonBlank(config.getDefaultAuthor(), siteName);
             var displayName = tag.getSpec().getDisplayName();
 
-            return new SeoData(firstNonBlank(title, siteName), firstNonBlank(description, siteDesc),
-                coverUrl, pageUrl, author, null, null, null, null, siteName, siteLogo, displayName,
+            return new SeoData(firstNonBlank(title, tag.getSpec().getDisplayName(), siteName),
+                firstNonBlank(description, tag.getSpec().getDescription(), siteDesc), coverUrl,
+                pageUrl, author, null, null, null, null, siteName, siteLogo, displayName,
                 "website");
         });
     }
@@ -778,9 +790,9 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
                     systemInfo.getLogo()));
             var siteLogo = processPermalink(systemInfo.getLogo());
 
-            return new SeoData(firstNonBlank(title, siteName), firstNonBlank(description, siteDesc),
-                coverUrl, pageUrl, displayName, null, null, null, null, siteName, siteLogo,
-                displayName, "profile");
+            return new SeoData(firstNonBlank(title, user.getSpec().getDisplayName(), siteName),
+                firstNonBlank(description, user.getSpec().getBio(), siteDesc), coverUrl, pageUrl,
+                displayName, null, null, null, null, siteName, siteLogo, displayName, "profile");
         });
     }
 

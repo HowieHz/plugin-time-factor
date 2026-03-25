@@ -38,14 +38,25 @@
 
 ### 标题与描述的取值逻辑
 
-插件不自己拼接或硬编码任何标题/描述文字，而是直接读取主题已渲染好的 `<head>` 内容，保证 SEO 标签与页面实际展示完全一致：
+插件不自己拼接或硬编码任何标题/描述文字，而是优先读取主题已渲染好的 `<head>` 内容，保证 SEO 标签与页面实际展示完全一致：
 
-**标题**：`<title>` 标签文本 → 站点标题 → 不输出
+**标题**：`<title>` 标签文本 → 实体固定值 → 站点标题 → 不输出
 
-**描述**：`<meta name="description">` 的 `content` → 站点 SEO 描述 → 不输出
+**描述**：`<meta name="description">` 的 `content` → 实体固定值 → 站点 SEO 描述 → 不输出
 
-> 主题负责生成 `<title>` 和 `<meta name="description">`，插件只负责将它们同步到 OG、结构化数据等各类 SEO
-> 标签中。若主题未设置这两项，则回退到 Halo 后台「基本设置」中的站点标题和站点描述；若站点级也为空，对应字段不输出（不生成空值标签）。
+其中「实体固定值」因页面类型而异：
+
+| 页面类型   | 标题实体值                       | 描述实体值                       |
+|--------|-----------------------------|-----------------------------|
+| 文章详情页  | `post.spec.title`           | `post.status.excerpt`       |
+| 独立页面   | `singlePage.spec.title`     | `singlePage.status.excerpt` |
+| 分类详情页  | `category.spec.displayName` | `category.spec.description` |
+| 标签详情页  | `tag.spec.displayName`      | `tag.spec.description`      |
+| 作者页    | `user.spec.displayName`     | `user.spec.bio`             |
+| 列表/聚合页 | —                           | —                           |
+
+> 主题负责生成 `<title>` 和 `<meta name="description">`，插件优先使用这两项；若主题未设置，则回退到实体级固定值；实体级也为空时回退到
+> Halo 后台「基本设置」中的站点标题和站点描述；若站点级也为空，对应字段不输出（不生成空值标签）。
 
 ### Halo 内置页面
 
@@ -76,7 +87,8 @@
 | 豆瓣   | `douban`  | [plugin-douban](https://github.com/chengzhongxue/plugin-douban)                   |
 | 番剧   | `bangumi` | [halo-plugin-bangumi-data](https://github.com/ShiinaKin/halo-plugin-bangumi-data) |
 
-> 第三方插件页面的标题/描述同样来自页面的 `<title>` 和 `<meta name="description">`，由对应插件的主题模板负责设置。
+> 第三方插件页面的标题/描述同样来自页面的 `<title>` 和 `<meta name="description">`，由对应插件的主题模板负责设置。豆瓣插件额外支持上下文
+`title` 变量作为中间回退（`<title>` 提取失败时使用）。
 
 ### 各页面输出字段差异
 
