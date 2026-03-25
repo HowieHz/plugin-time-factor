@@ -1,11 +1,6 @@
 package cc.lik.timefactor.process;
 
 import cc.lik.timefactor.service.SettingConfigGetter;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Optional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +29,11 @@ import run.halo.app.infra.SystemInfoGetter;
 import run.halo.app.theme.dialect.TemplateHeadProcessor;
 import run.halo.app.theme.finders.vo.ExtensionVoOperator;
 import run.halo.app.theme.router.ModelConst;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * 模板 ID 枚举，映射 Halo 路由系统中的 {@code _templateId} 到具体页面类型。
@@ -508,8 +508,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
                 var siteName = systemInfo.getTitle();
                 var siteLogo = processPermalink(systemInfo.getLogo());
 
-                // 标题格式：pageTitle - siteName
-                var title = hasValue(siteName) ? pageTitle + " - " + siteName : pageTitle;
+                var title = formatTitle(pageTitle, siteName, config.getTitleFormat());
 
                 // 描述优先级：页面描述 > 站点 SEO 描述 > 页面标题
                 var siteDesc =
@@ -689,7 +688,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
 
             var displayName = category.getSpec().getDisplayName();
             var siteName = systemInfo.getTitle();
-            var title = hasValue(siteName) ? displayName + " - " + siteName : displayName;
+            var title = formatTitle(displayName, siteName, config.getTitleFormat());
 
             // 分类有 description 字段，回退到 "分类: displayName"
             var description = firstNonBlank(category.getSpec().getDescription(),
@@ -734,7 +733,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
 
             var displayName = tag.getSpec().getDisplayName();
             var siteName = systemInfo.getTitle();
-            var title = hasValue(siteName) ? displayName + " - " + siteName : displayName;
+            var title = formatTitle(displayName, siteName, config.getTitleFormat());
             // 描述：优先 Tag 自身的 description，回退到 "标签: displayName"
             var description =
                 firstNonBlank(tag.getSpec().getDescription(), TAG_DESC_PREFIX + displayName);
@@ -779,7 +778,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
 
             var displayName = user.getSpec().getDisplayName();
             var siteName = systemInfo.getTitle();
-            var title = hasValue(siteName) ? displayName + " - " + siteName : displayName;
+            var title = formatTitle(displayName, siteName, config.getTitleFormat());
             var description =
                 firstNonBlank(user.getSpec().getBio(), AUTHOR_DESC_PREFIX + displayName);
 
@@ -1179,6 +1178,26 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
                 .filter(s -> !s.isBlank()).orElse(null);
         }
         return null;
+    }
+
+    /**
+     * 根据配置模板格式化页面标题。
+     *
+     * <p>用 {@code %TITLE%} 替换页面标题，{@code %SITENAME%} 替换站点名称。
+     * 当站点名称为空时，直接返回 title，避免出现 "标题 - " 这类残缺输出。
+     * 当 format 为空时同样退回到 title。
+     *
+     * @param title 页面标题
+     * @param siteName 站点名称
+     * @param format 配置的标题格式模板，如 {@code "%TITLE% - %SITENAME%"}
+     * @return 格式化后的标题
+     */
+    private String formatTitle(String title, String siteName, String format) {
+        var t = hasValue(title) ? title : "";
+        if (!hasValue(format) || !hasValue(siteName)) {
+            return t;
+        }
+        return format.replace("%TITLE%", t).replace("%SITENAME%", siteName);
     }
 
     /**
