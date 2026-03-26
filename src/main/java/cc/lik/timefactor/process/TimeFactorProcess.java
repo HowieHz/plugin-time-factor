@@ -561,14 +561,17 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
                 Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
                     .orElse(null);
 
+            // %TITLE%/%DESC% 展开时，用 extracted 优先、intermediate 兜底的有效值，
+            // 避免 extracted 为 null 时占位符展开为空串导致 firstNonBlank 无法正常回退
+            var phTitle = firstNonBlank(extractedTitle, intermediateTitle);
+            var phDesc = firstNonBlank(extractedDesc, intermediateDesc);
             // 标题：覆盖值（占位符已替换） → 中间值（实体/插件上下文变量） → 站点标题 → 空
-            var finalTitle =
-                firstNonBlank(applyPlaceholders(title, extractedTitle, extractedDesc, systemInfo),
-                    intermediateTitle, siteName);
+            var finalTitle = firstNonBlank(applyPlaceholders(title, phTitle, phDesc, systemInfo),
+                intermediateTitle, siteName);
             // 描述：覆盖值（占位符已替换） → 中间值 → 站点描述 → 空
-            var finalDesc = firstNonBlank(
-                applyPlaceholders(description, extractedTitle, extractedDesc, systemInfo),
-                intermediateDesc, siteDesc);
+            var finalDesc =
+                firstNonBlank(applyPlaceholders(description, phTitle, phDesc, systemInfo),
+                    intermediateDesc, siteDesc);
 
             // 通过 ExternalLinkProcessor 将相对路径转为完整的外部 URL
             var pageUrl = externalLinkProcessor.processLink(pathProvider.apply(routeRules));
@@ -636,12 +639,13 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             var siteDesc =
                 Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
                     .orElse(null);
-            var finalTitle =
-                firstNonBlank(applyPlaceholders(title, extractedTitle, extractedDesc, systemInfo),
-                    post.getSpec().getTitle(), siteName);
-            var finalDesc = firstNonBlank(
-                applyPlaceholders(description, extractedTitle, extractedDesc, systemInfo),
-                status.getExcerpt(), siteDesc);
+            var phTitle = firstNonBlank(extractedTitle, post.getSpec().getTitle());
+            var phDesc = firstNonBlank(extractedDesc, status.getExcerpt());
+            var finalTitle = firstNonBlank(applyPlaceholders(title, phTitle, phDesc, systemInfo),
+                post.getSpec().getTitle(), siteName);
+            var finalDesc =
+                firstNonBlank(applyPlaceholders(description, phTitle, phDesc, systemInfo),
+                    status.getExcerpt(), siteDesc);
             // 封面：优先文章封面，回退到插件默认封面
             var coverUrl = processPermalink(
                 firstNonBlank(post.getSpec().getCover(), config.getDefaultImage()));
@@ -717,11 +721,12 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
                 Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getKeywords)
                     .orElse(null);
 
-            return new SeoData(
-                firstNonBlank(applyPlaceholders(title, extractedTitle, extractedDesc, systemInfo),
-                    page.getSpec().getTitle(), siteName), firstNonBlank(
-                applyPlaceholders(description, extractedTitle, extractedDesc, systemInfo),
-                status.getExcerpt(), siteDesc), coverUrl, pageUrl, author,
+            var phTitle = firstNonBlank(extractedTitle, page.getSpec().getTitle());
+            var phDesc = firstNonBlank(extractedDesc, status.getExcerpt());
+            return new SeoData(firstNonBlank(applyPlaceholders(title, phTitle, phDesc, systemInfo),
+                page.getSpec().getTitle(), siteName),
+                firstNonBlank(applyPlaceholders(description, phTitle, phDesc, systemInfo),
+                    status.getExcerpt(), siteDesc), coverUrl, pageUrl, author,
                 formatDateTime(publishInstant, BAIDU_FORMATTER, zoneId),
                 formatDateTime(updateInstant, BAIDU_FORMATTER, zoneId),
                 formatDateTime(publishInstant, GOOGLE_FORMATTER, zoneId),
@@ -766,11 +771,12 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             var author = firstNonBlank(config.getDefaultAuthor(), siteName);
             var displayName = category.getSpec().getDisplayName();
 
-            return new SeoData(
-                firstNonBlank(applyPlaceholders(title, extractedTitle, extractedDesc, systemInfo),
-                    category.getSpec().getDisplayName(), siteName), firstNonBlank(
-                applyPlaceholders(description, extractedTitle, extractedDesc, systemInfo),
-                category.getSpec().getDescription(), siteDesc), coverUrl, pageUrl, author, null,
+            var phTitle = firstNonBlank(extractedTitle, category.getSpec().getDisplayName());
+            var phDesc = firstNonBlank(extractedDesc, category.getSpec().getDescription());
+            return new SeoData(firstNonBlank(applyPlaceholders(title, phTitle, phDesc, systemInfo),
+                category.getSpec().getDisplayName(), siteName),
+                firstNonBlank(applyPlaceholders(description, phTitle, phDesc, systemInfo),
+                    category.getSpec().getDescription(), siteDesc), coverUrl, pageUrl, author, null,
                 null, null, null, siteName, siteLogo, displayName, "website");
         });
     }
@@ -811,12 +817,13 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             var author = firstNonBlank(config.getDefaultAuthor(), siteName);
             var displayName = tag.getSpec().getDisplayName();
 
-            return new SeoData(
-                firstNonBlank(applyPlaceholders(title, extractedTitle, extractedDesc, systemInfo),
-                    tag.getSpec().getDisplayName(), siteName), firstNonBlank(
-                applyPlaceholders(description, extractedTitle, extractedDesc, systemInfo),
-                tag.getSpec().getDescription(), siteDesc), coverUrl, pageUrl, author, null, null,
-                null, null, siteName, siteLogo, displayName, "website");
+            var phTitle = firstNonBlank(extractedTitle, tag.getSpec().getDisplayName());
+            var phDesc = firstNonBlank(extractedDesc, tag.getSpec().getDescription());
+            return new SeoData(firstNonBlank(applyPlaceholders(title, phTitle, phDesc, systemInfo),
+                tag.getSpec().getDisplayName(), siteName),
+                firstNonBlank(applyPlaceholders(description, phTitle, phDesc, systemInfo),
+                    tag.getSpec().getDescription(), siteDesc), coverUrl, pageUrl, author, null,
+                null, null, null, siteName, siteLogo, displayName, "website");
         });
     }
 
@@ -857,11 +864,12 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
                     systemInfo.getLogo()));
             var siteLogo = processPermalink(systemInfo.getLogo());
 
-            return new SeoData(
-                firstNonBlank(applyPlaceholders(title, extractedTitle, extractedDesc, systemInfo),
-                    user.getSpec().getDisplayName(), siteName), firstNonBlank(
-                applyPlaceholders(description, extractedTitle, extractedDesc, systemInfo),
-                user.getSpec().getBio(), siteDesc), coverUrl, pageUrl, displayName, null, null,
+            var phTitle = firstNonBlank(extractedTitle, user.getSpec().getDisplayName());
+            var phDesc = firstNonBlank(extractedDesc, user.getSpec().getBio());
+            return new SeoData(firstNonBlank(applyPlaceholders(title, phTitle, phDesc, systemInfo),
+                user.getSpec().getDisplayName(), siteName),
+                firstNonBlank(applyPlaceholders(description, phTitle, phDesc, systemInfo),
+                    user.getSpec().getBio(), siteDesc), coverUrl, pageUrl, displayName, null, null,
                 null, null, siteName, siteLogo, displayName, "profile");
         });
     }
@@ -1263,18 +1271,19 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      *
      * <p>支持的占位符：
      * <ul>
-     *   <li>{@code %TITLE%}    → 页面预注入的 {@code <title>} 标签文本</li>
-     *   <li>{@code %DESC%}     → 页面预注入的 {@code <meta name="description">} content</li>
+     *   <li>{@code %TITLE%}    → 预注入 {@code <title>} 文本 → 实体固定值（如 post.spec.title）</li>
+     *   <li>{@code %DESC%}     → 预注入 {@code <meta name="description">} content → 实体固定值（如 post
+     *   .status.excerpt）</li>
      *   <li>{@code %SITENAME%} → 站点标题</li>
      *   <li>{@code %SITEDESC%} → 站点 SEO 描述</li>
      * </ul>
      *
      * @param value 原始字符串，可能包含占位符；null 时原样返回
-     * @param extractedTitle 从 head 模型提取的 &lt;title&gt; 文本，用于替换 {@code %TITLE%}
-     * @param extractedDesc 从 head 模型提取的 meta description，用于替换 {@code %DESC%}
+     * @param phTitle {@code %TITLE%} 的展开值，由调用方按"预注入 → 实体固定值"链取好后传入
+     * @param phDesc {@code %DESC%}  的展开值，由调用方按"预注入 → 实体固定值"链取好后传入
      * @param systemInfo 站点信息，用于替换 {@code %SITENAME%} 和 {@code %SITEDESC%}
      */
-    private String applyPlaceholders(String value, String extractedTitle, String extractedDesc,
+    private String applyPlaceholders(String value, String phTitle, String phDesc,
         SystemInfo systemInfo) {
         if (value == null || value.isBlank()) {
             return value;
@@ -1283,9 +1292,9 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
         var siteDesc =
             Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
                 .orElse("");
-        return value.replace("%TITLE%", extractedTitle != null ? extractedTitle : "")
-            .replace("%DESC%", extractedDesc != null ? extractedDesc : "")
-            .replace("%SITENAME%", siteName).replace("%SITEDESC%", siteDesc);
+        return value.replace("%TITLE%", phTitle != null ? phTitle : "")
+            .replace("%DESC%", phDesc != null ? phDesc : "").replace("%SITENAME%", siteName)
+            .replace("%SITEDESC%", siteDesc);
     }
 
     /**
