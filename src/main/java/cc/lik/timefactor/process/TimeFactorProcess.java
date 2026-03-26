@@ -381,12 +381,13 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
         if (postName == null) {
             return Mono.empty();
         }
-        var title = hasValue(override.title()) ? override.title() : extractTitleFromModel(model);
-        var description = hasValue(override.description()) ? override.description()
-            : extractMetaDescriptionFromModel(model);
+        var extractedTitle = extractTitleFromModel(model);
+        var extractedDesc = extractMetaDescriptionFromModel(model);
+        var title = hasValue(override.title()) ? override.title() : extractedTitle;
+        var description = hasValue(override.description()) ? override.description() : extractedDesc;
         return client.fetch(Post.class, postName).flatMap(
-            post -> buildSeoDataForPost(post, title, description).flatMap(
-                seoData -> generateSeoTags(seoData, model, modelFactory)));
+            post -> buildSeoDataForPost(post, title, description, extractedTitle,
+                extractedDesc).flatMap(seoData -> generateSeoTags(seoData, model, modelFactory)));
     }
 
     /**
@@ -412,12 +413,13 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
         if (categoryName == null) {
             return Mono.empty();
         }
-        var title = hasValue(override.title()) ? override.title() : extractTitleFromModel(model);
-        var description = hasValue(override.description()) ? override.description()
-            : extractMetaDescriptionFromModel(model);
+        var extractedTitle = extractTitleFromModel(model);
+        var extractedDesc = extractMetaDescriptionFromModel(model);
+        var title = hasValue(override.title()) ? override.title() : extractedTitle;
+        var description = hasValue(override.description()) ? override.description() : extractedDesc;
         return client.fetch(Category.class, categoryName).flatMap(
-            category -> buildSeoDataForCategory(category, title, description).flatMap(
-                seoData -> generateSeoTags(seoData, model, modelFactory)));
+            category -> buildSeoDataForCategory(category, title, description, extractedTitle,
+                extractedDesc).flatMap(seoData -> generateSeoTags(seoData, model, modelFactory)));
     }
 
     /**
@@ -441,12 +443,13 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
         if (tagName == null) {
             return Mono.empty();
         }
-        var title = hasValue(override.title()) ? override.title() : extractTitleFromModel(model);
-        var description = hasValue(override.description()) ? override.description()
-            : extractMetaDescriptionFromModel(model);
+        var extractedTitle = extractTitleFromModel(model);
+        var extractedDesc = extractMetaDescriptionFromModel(model);
+        var title = hasValue(override.title()) ? override.title() : extractedTitle;
+        var description = hasValue(override.description()) ? override.description() : extractedDesc;
         return client.fetch(Tag.class, tagName).flatMap(
-            tag -> buildSeoDataForTag(tag, title, description).flatMap(
-                seoData -> generateSeoTags(seoData, model, modelFactory)));
+            tag -> buildSeoDataForTag(tag, title, description, extractedTitle,
+                extractedDesc).flatMap(seoData -> generateSeoTags(seoData, model, modelFactory)));
     }
 
     /**
@@ -472,12 +475,13 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
         if (pageName == null) {
             return Mono.empty();
         }
-        var title = hasValue(override.title()) ? override.title() : extractTitleFromModel(model);
-        var description = hasValue(override.description()) ? override.description()
-            : extractMetaDescriptionFromModel(model);
+        var extractedTitle = extractTitleFromModel(model);
+        var extractedDesc = extractMetaDescriptionFromModel(model);
+        var title = hasValue(override.title()) ? override.title() : extractedTitle;
+        var description = hasValue(override.description()) ? override.description() : extractedDesc;
         return client.fetch(SinglePage.class, pageName).flatMap(
-            page -> buildSeoDataForSinglePage(page, title, description).flatMap(
-                seoData -> generateSeoTags(seoData, model, modelFactory)));
+            page -> buildSeoDataForSinglePage(page, title, description, extractedTitle,
+                extractedDesc).flatMap(seoData -> generateSeoTags(seoData, model, modelFactory)));
     }
 
     /**
@@ -501,12 +505,13 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
         if (userName == null) {
             return Mono.empty();
         }
-        var title = hasValue(override.title()) ? override.title() : extractTitleFromModel(model);
-        var description = hasValue(override.description()) ? override.description()
-            : extractMetaDescriptionFromModel(model);
+        var extractedTitle = extractTitleFromModel(model);
+        var extractedDesc = extractMetaDescriptionFromModel(model);
+        var title = hasValue(override.title()) ? override.title() : extractedTitle;
+        var description = hasValue(override.description()) ? override.description() : extractedDesc;
         return client.fetch(User.class, userName).flatMap(
-            user -> buildSeoDataForAuthor(user, title, description).flatMap(
-                seoData -> generateSeoTags(seoData, model, modelFactory)));
+            user -> buildSeoDataForAuthor(user, title, description, extractedTitle,
+                extractedDesc).flatMap(seoData -> generateSeoTags(seoData, model, modelFactory)));
     }
 
     // ======================== SEO 数据构建方法 ========================
@@ -537,10 +542,12 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
         Function<SystemSetting.ThemeRouteRules, String> pathProvider, SeoOverride override,
         String intermediateTitle, String intermediateDesc) {
         var modelFactory = context.getModelFactory();
-        // 覆盖值优先；无覆盖时从已渲染的 head 中读取
-        var title = hasValue(override.title()) ? override.title() : extractTitleFromModel(model);
-        var description = hasValue(override.description()) ? override.description()
-            : extractMetaDescriptionFromModel(model);
+        // 始终提取原始值，用于 %TITLE%/%DESC% 占位符展开
+        var extractedTitle = extractTitleFromModel(model);
+        var extractedDesc = extractMetaDescriptionFromModel(model);
+        // 覆盖值优先；无覆盖时使用提取值
+        var title = hasValue(override.title()) ? override.title() : extractedTitle;
+        var description = hasValue(override.description()) ? override.description() : extractedDesc;
 
         return Mono.zip(settingConfigGetter.getBasicConfig(), systemInfoGetter.get(),
             getThemeRouteRules()).flatMap(tuple -> {
@@ -555,11 +562,13 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
                     .orElse(null);
 
             // 标题：覆盖值（占位符已替换） → 中间值（实体/插件上下文变量） → 站点标题 → 空
-            var finalTitle = firstNonBlank(applyPlaceholders(title, systemInfo), intermediateTitle,
-                siteName);
+            var finalTitle =
+                firstNonBlank(applyPlaceholders(title, extractedTitle, extractedDesc, systemInfo),
+                    intermediateTitle, siteName);
             // 描述：覆盖值（占位符已替换） → 中间值 → 站点描述 → 空
-            var finalDesc = firstNonBlank(applyPlaceholders(description, systemInfo), intermediateDesc,
-                siteDesc);
+            var finalDesc = firstNonBlank(
+                applyPlaceholders(description, extractedTitle, extractedDesc, systemInfo),
+                intermediateDesc, siteDesc);
 
             // 通过 ExternalLinkProcessor 将相对路径转为完整的外部 URL
             var pageUrl = externalLinkProcessor.processLink(pathProvider.apply(routeRules));
@@ -605,7 +614,8 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @param post 文章 Extension 对象
      * @return 包含完整 SEO 数据的 Mono
      */
-    private Mono<SeoData> buildSeoDataForPost(Post post, String title, String description) {
+    private Mono<SeoData> buildSeoDataForPost(Post post, String title, String description,
+        String extractedTitle, String extractedDesc) {
         // 并行获取：文章所有者、文章标签、插件配置、系统信息
         return Mono.zip(client.fetch(User.class, post.getSpec().getOwner()), findTagForPost(post),
             settingConfigGetter.getBasicConfig(), systemInfoGetter.get()).map(tuple -> {
@@ -626,9 +636,11 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             var siteDesc =
                 Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
                     .orElse(null);
-            var finalTitle = firstNonBlank(applyPlaceholders(title, systemInfo),
-                post.getSpec().getTitle(), siteName);
-            var finalDesc = firstNonBlank(applyPlaceholders(description, systemInfo),
+            var finalTitle =
+                firstNonBlank(applyPlaceholders(title, extractedTitle, extractedDesc, systemInfo),
+                    post.getSpec().getTitle(), siteName);
+            var finalDesc = firstNonBlank(
+                applyPlaceholders(description, extractedTitle, extractedDesc, systemInfo),
                 status.getExcerpt(), siteDesc);
             // 封面：优先文章封面，回退到插件默认封面
             var coverUrl = processPermalink(
@@ -677,7 +689,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @return 包含 SEO 数据的 Mono
      */
     private Mono<SeoData> buildSeoDataForSinglePage(SinglePage page, String title,
-        String description) {
+        String description, String extractedTitle, String extractedDesc) {
         return Mono.zip(client.fetch(User.class, page.getSpec().getOwner()),
             settingConfigGetter.getBasicConfig(), systemInfoGetter.get()).map(tuple -> {
             var user = tuple.getT1();
@@ -706,11 +718,11 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
                     .orElse(null);
 
             return new SeoData(
-                firstNonBlank(applyPlaceholders(title, systemInfo), page.getSpec().getTitle(),
-                    siteName),
-                firstNonBlank(applyPlaceholders(description, systemInfo), status.getExcerpt(),
-                    siteDesc), coverUrl, pageUrl,
-                author, formatDateTime(publishInstant, BAIDU_FORMATTER, zoneId),
+                firstNonBlank(applyPlaceholders(title, extractedTitle, extractedDesc, systemInfo),
+                    page.getSpec().getTitle(), siteName), firstNonBlank(
+                applyPlaceholders(description, extractedTitle, extractedDesc, systemInfo),
+                status.getExcerpt(), siteDesc), coverUrl, pageUrl, author,
+                formatDateTime(publishInstant, BAIDU_FORMATTER, zoneId),
                 formatDateTime(updateInstant, BAIDU_FORMATTER, zoneId),
                 formatDateTime(publishInstant, GOOGLE_FORMATTER, zoneId),
                 formatDateTime(updateInstant, GOOGLE_FORMATTER, zoneId), siteName, siteLogo,
@@ -737,7 +749,7 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @return 包含 SEO 数据的 Mono
      */
     private Mono<SeoData> buildSeoDataForCategory(Category category, String title,
-        String description) {
+        String description, String extractedTitle, String extractedDesc) {
         return Mono.zip(settingConfigGetter.getBasicConfig(), systemInfoGetter.get()).map(tuple -> {
             var config = tuple.getT1();
             var systemInfo = tuple.getT2();
@@ -755,12 +767,11 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             var displayName = category.getSpec().getDisplayName();
 
             return new SeoData(
-                firstNonBlank(applyPlaceholders(title, systemInfo),
-                    category.getSpec().getDisplayName(), siteName),
-                firstNonBlank(applyPlaceholders(description, systemInfo),
-                    category.getSpec().getDescription(), siteDesc), coverUrl,
-                pageUrl, author, null, null, null, null, siteName, siteLogo, displayName,
-                "website");
+                firstNonBlank(applyPlaceholders(title, extractedTitle, extractedDesc, systemInfo),
+                    category.getSpec().getDisplayName(), siteName), firstNonBlank(
+                applyPlaceholders(description, extractedTitle, extractedDesc, systemInfo),
+                category.getSpec().getDescription(), siteDesc), coverUrl, pageUrl, author, null,
+                null, null, null, siteName, siteLogo, displayName, "website");
         });
     }
 
@@ -782,7 +793,8 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @param tag 标签 Extension 对象
      * @return 包含 SEO 数据的 Mono
      */
-    private Mono<SeoData> buildSeoDataForTag(Tag tag, String title, String description) {
+    private Mono<SeoData> buildSeoDataForTag(Tag tag, String title, String description,
+        String extractedTitle, String extractedDesc) {
         return Mono.zip(settingConfigGetter.getBasicConfig(), systemInfoGetter.get()).map(tuple -> {
             var config = tuple.getT1();
             var systemInfo = tuple.getT2();
@@ -800,12 +812,11 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             var displayName = tag.getSpec().getDisplayName();
 
             return new SeoData(
-                firstNonBlank(applyPlaceholders(title, systemInfo), tag.getSpec().getDisplayName(),
-                    siteName),
-                firstNonBlank(applyPlaceholders(description, systemInfo),
-                    tag.getSpec().getDescription(), siteDesc), coverUrl,
-                pageUrl, author, null, null, null, null, siteName, siteLogo, displayName,
-                "website");
+                firstNonBlank(applyPlaceholders(title, extractedTitle, extractedDesc, systemInfo),
+                    tag.getSpec().getDisplayName(), siteName), firstNonBlank(
+                applyPlaceholders(description, extractedTitle, extractedDesc, systemInfo),
+                tag.getSpec().getDescription(), siteDesc), coverUrl, pageUrl, author, null, null,
+                null, null, siteName, siteLogo, displayName, "website");
         });
     }
 
@@ -828,7 +839,8 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
      * @param user 用户 Extension 对象
      * @return 包含 SEO 数据的 Mono
      */
-    private Mono<SeoData> buildSeoDataForAuthor(User user, String title, String description) {
+    private Mono<SeoData> buildSeoDataForAuthor(User user, String title, String description,
+        String extractedTitle, String extractedDesc) {
         return Mono.zip(settingConfigGetter.getBasicConfig(), systemInfoGetter.get()).map(tuple -> {
             var config = tuple.getT1();
             var systemInfo = tuple.getT2();
@@ -846,11 +858,11 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
             var siteLogo = processPermalink(systemInfo.getLogo());
 
             return new SeoData(
-                firstNonBlank(applyPlaceholders(title, systemInfo), user.getSpec().getDisplayName(),
-                    siteName),
-                firstNonBlank(applyPlaceholders(description, systemInfo), user.getSpec().getBio(),
-                    siteDesc), coverUrl, pageUrl,
-                displayName, null, null, null, null, siteName, siteLogo, displayName, "profile");
+                firstNonBlank(applyPlaceholders(title, extractedTitle, extractedDesc, systemInfo),
+                    user.getSpec().getDisplayName(), siteName), firstNonBlank(
+                applyPlaceholders(description, extractedTitle, extractedDesc, systemInfo),
+                user.getSpec().getBio(), siteDesc), coverUrl, pageUrl, displayName, null, null,
+                null, null, siteName, siteLogo, displayName, "profile");
         });
     }
 
@@ -1247,25 +1259,33 @@ public class TimeFactorProcess implements TemplateHeadProcessor {
     }
 
     /**
-     * 将 SEO 覆盖值中的占位符替换为实际的站点信息。
+     * 将 SEO 覆盖值中的占位符替换为实际内容。
      *
      * <p>支持的占位符：
      * <ul>
+     *   <li>{@code %TITLE%}    → 页面预注入的 {@code <title>} 标签文本</li>
+     *   <li>{@code %DESC%}     → 页面预注入的 {@code <meta name="description">} content</li>
      *   <li>{@code %SITENAME%} → 站点标题</li>
      *   <li>{@code %SITEDESC%} → 站点 SEO 描述</li>
      * </ul>
      *
      * @param value 原始字符串，可能包含占位符；null 时原样返回
-     * @param systemInfo 站点信息，用于替换占位符
+     * @param extractedTitle 从 head 模型提取的 &lt;title&gt; 文本，用于替换 {@code %TITLE%}
+     * @param extractedDesc 从 head 模型提取的 meta description，用于替换 {@code %DESC%}
+     * @param systemInfo 站点信息，用于替换 {@code %SITENAME%} 和 {@code %SITEDESC%}
      */
-    private String applyPlaceholders(String value, SystemInfo systemInfo) {
+    private String applyPlaceholders(String value, String extractedTitle, String extractedDesc,
+        SystemInfo systemInfo) {
         if (value == null || value.isBlank()) {
             return value;
         }
         var siteName = Optional.ofNullable(systemInfo.getTitle()).orElse("");
-        var siteDesc = Optional.ofNullable(systemInfo.getSeo())
-            .map(SystemInfo.SeoProp::getDescription).orElse("");
-        return value.replace("%SITENAME%", siteName).replace("%SITEDESC%", siteDesc);
+        var siteDesc =
+            Optional.ofNullable(systemInfo.getSeo()).map(SystemInfo.SeoProp::getDescription)
+                .orElse("");
+        return value.replace("%TITLE%", extractedTitle != null ? extractedTitle : "")
+            .replace("%DESC%", extractedDesc != null ? extractedDesc : "")
+            .replace("%SITENAME%", siteName).replace("%SITEDESC%", siteDesc);
     }
 
     /**
