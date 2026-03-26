@@ -87,10 +87,9 @@
 | 分类集合页 | `categories` | 无                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/categories) |
 | 分类详情页 | `category`   | Category（封面、permalink） | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/category)   |
 | 标签集合页 | `tags`       | 无                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/tags)       |
+| 标签详情页 | `tag`        | Tag（permalink）         | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/tag)        |
 | 文章归档页 | `archives`   | 无                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/archives)   |
 | 作者页   | `author`     | User（头像、permalink）     | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/author)     |
-
-> **暂不支持**：标签详情页（`tag`）——Halo 的标签路由未注入 `_templateId` 上下文变量，插件无法识别该页面类型。
 
 > **路由前缀**：分类集合、标签集合、归档页的 canonical URL 会读取 Halo CMS 的“主题路由设置”（设置 /
 > 主题路由设置）配置，与站点实际路由保持同步，不使用硬编码路径。
@@ -115,7 +114,7 @@
 | 文章详情页  | `article` | `BlogPosting`      |    ✅    | ✅  | ✅ 文章标签  | 字段最完整的页面类型                   |
 | 独立页面   | `article` | `BlogPosting`      |    ✅    | ✅  | ✅ 站点关键词 | 独立页面无标签，关键词回退到站点级            |
 | 分类详情页  | `website` | `WebPage`          |    ❌    | ❌  |  ✅ 分类名  | 分类无发布时间和作者                   |
-| 标签详情页  | `website` | `WebPage`          |    ❌    | ❌  |  ✅ 标签名  | （⚠️ 暂不支持）标签无发布时间和作者          |
+| 标签详情页  | `website` | `WebPage`          |    ❌    | ❌  |  ✅ 标签名  | 标签无发布时间和作者                     |
 | 作者页    | `profile` | `ProfilePage`      |    ❌    | ✅  |  ✅ 作者名  | 作者页无发布时间                     |
 | 列表/聚合页 | `website` | `WebPage`          |    ❌    | ❌  | ✅ 站点关键词 | 首页、分类集合、标签集合、文章归档页、所有第三方插件页面 |
 
