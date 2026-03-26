@@ -39,11 +39,9 @@
 
 ### 标题与描述的取值逻辑
 
-插件不自己拼接或硬编码任何标题/描述文字，而是优先读取已渲染好的 `<head>` 内容，保证 SEO 标签与页面实际展示完全一致：
+**标题**：SEO 覆盖配置（插件设置 / SEO 覆盖） → 预注入的 `<title>` 标签文本 → 实体固定值 → 站点标题（设置 / 基本设置） → 不输出
 
-**标题**：SEO 覆盖配置（插件设置 / SEO 覆盖） → `<title>` 标签文本 → 实体固定值 → 站点标题（设置 / 基本设置） → 不输出
-
-**描述**：SEO 覆盖配置（插件设置 / SEO 覆盖） → `<meta name="description">` 的 `content` → 实体固定值 → 站点描述（设置 / SEO
+**描述**：SEO 覆盖配置（插件设置 / SEO 覆盖） → 预注入的 `<meta name="description">` 的 `content` → 实体固定值 → 站点描述（设置 / SEO
 设置） → 不输出
 
 > **局限性说明**：插件读取的 `<title>` 和 `<meta name="description">` 来自 Halo 在模板渲染前注入到内部模型（`IModel`）的值，由
@@ -53,26 +51,29 @@
 
 其中“实体固定值”因页面类型而异：
 
-| 页面类型   | 标题实体值                       | 描述实体值                       |
-|--------|-----------------------------|-----------------------------|
-| 文章详情页  | `post.spec.title`           | `post.status.excerpt`       |
-| 独立页面   | `singlePage.spec.title`     | `singlePage.status.excerpt` |
-| 分类详情页  | `category.spec.displayName` | `category.spec.description` |
-| 标签详情页  | `tag.spec.displayName`      | `tag.spec.description`      |
-| 作者页    | `user.spec.displayName`     | `user.spec.bio`             |
-| 列表/聚合页 | —                           | —                           |
+| 页面类型                                                                | 标题实体值                       | 描述实体值                       |
+|---------------------------------------------------------------------|-----------------------------|-----------------------------|
+| 文章详情页                                                               | `post.spec.title`           | `post.status.excerpt`       |
+| 独立页面                                                                | `singlePage.spec.title`     | `singlePage.status.excerpt` |
+| 分类详情页                                                               | `category.spec.displayName` | `category.spec.description` |
+| 标签详情页                                                               | `tag.spec.displayName`      | `tag.spec.description`      |
+| 作者页                                                                 | `user.spec.displayName`     | `user.spec.bio`             |
+| 豆瓣（[plugin-douban](https://github.com/chengzhongxue/plugin-douban)） | `title`                     | 无                           |
+| 其他页面                                                                | 无                           | 无                           |
 
-### Halo 内置页面
+### 已知模板 ID 枚举
 
-| 页面类型  | 模板 ID        | 额外数据来源（封面/作者/时间等）      | 文档                                                                                |
+#### Halo 内置页面
+
+| 页面类型  | 模板 ID        | 数据来源类型                 | 文档                                                                                |
 |-------|--------------|------------------------|-----------------------------------------------------------------------------------|
-| 首页    | `index`      | —                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/index_)     |
-| 文章详情页 | `post`       | Post + User + Tag      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/post)       |
-| 独立页面  | `page`       | SinglePage + User      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/page)       |
-| 分类集合页 | `categories` | —                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/categories) |
+| 首页    | `index`      | 无                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/index_)     |
+| 文章详情页 | `post`       | Post, User, Tag        | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/post)       |
+| 独立页面  | `page`       | SinglePage, User       | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/page)       |
+| 分类集合页 | `categories` | 无                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/categories) |
 | 分类详情页 | `category`   | Category（封面、permalink） | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/category)   |
-| 标签集合页 | `tags`       | —                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/tags)       |
-| 文章归档页 | `archives`   | —                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/archives)   |
+| 标签集合页 | `tags`       | 无                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/tags)       |
+| 文章归档页 | `archives`   | 无                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/archives)   |
 | 作者页   | `author`     | User（头像、permalink）     | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/author)     |
 
 > **暂不支持**：标签详情页（`tag`）——Halo 的标签路由未注入 `_templateId` 上下文变量，插件无法识别该页面类型。
@@ -80,7 +81,7 @@
 > **路由前缀**：分类集合、标签集合、归档页的 canonical URL 会读取 Halo CMS 的“主题路由设置”（设置 /
 > 主题路由设置）配置，与站点实际路由保持同步，不使用硬编码路径。
 
-### 第三方插件页面
+#### 第三方插件页面
 
 | 页面类型 | 模板 ID     | 插件                                                                                |
 |------|-----------|-----------------------------------------------------------------------------------|
@@ -91,20 +92,17 @@
 | 豆瓣   | `douban`  | [plugin-douban](https://github.com/chengzhongxue/plugin-douban)                   |
 | 番剧   | `bangumi` | [halo-plugin-bangumi-data](https://github.com/ShiinaKin/halo-plugin-bangumi-data) |
 
-> 第三方插件页面的标题/描述同样来自页面的 `<title>` 和 `<meta name="description">`，由对应插件的主题模板负责设置。
-> 豆瓣插件额外支持上下文 `title` 变量作为实体固定值回退。
-
 ### 各页面输出字段差异
 
 并非所有页面都拥有完整的 SEO 字段。当某个字段为空时，对应的 meta/script 标签会被**自动省略**（不输出空值标签），以保证结构化数据的有效性。
 
-| 页面类型   | `og:type` | Schema.org `@type` | 发布/更新时间 | 作者 |   关键词   | 说明                         |
-|--------|-----------|--------------------|:-------:|:--:|:-------:|----------------------------|
-| 文章详情页  | `article` | `BlogPosting`      |    ✅    | ✅  | ✅ 文章标签  | 字段最完整的页面类型                 |
-| 独立页面   | `article` | `BlogPosting`      |    ✅    | ✅  | ✅ 站点关键词 | 独立页面无标签，关键词回退到站点级          |
-| 分类详情页  | `website` | `WebPage`          |    ❌    | ❌  |  ✅ 分类名  | 分类无发布时间和作者                 |
-| 标签详情页  | `website` | `WebPage`          |    ❌    | ❌  |  ✅ 标签名  | （⚠️ 暂不支持）标签无发布时间和作者        |
-| 作者页    | `profile` | `ProfilePage`      |    ❌    | ✅  |  ✅ 作者名  | 作者页无发布时间                   |
+| 页面类型   | `og:type` | Schema.org `@type` | 发布/更新时间 | 作者 |   关键词   | 说明                           |
+|--------|-----------|--------------------|:-------:|:--:|:-------:|------------------------------|
+| 文章详情页  | `article` | `BlogPosting`      |    ✅    | ✅  | ✅ 文章标签  | 字段最完整的页面类型                   |
+| 独立页面   | `article` | `BlogPosting`      |    ✅    | ✅  | ✅ 站点关键词 | 独立页面无标签，关键词回退到站点级            |
+| 分类详情页  | `website` | `WebPage`          |    ❌    | ❌  |  ✅ 分类名  | 分类无发布时间和作者                   |
+| 标签详情页  | `website` | `WebPage`          |    ❌    | ❌  |  ✅ 标签名  | （⚠️ 暂不支持）标签无发布时间和作者          |
+| 作者页    | `profile` | `ProfilePage`      |    ❌    | ✅  |  ✅ 作者名  | 作者页无发布时间                     |
 | 列表/聚合页 | `website` | `WebPage`          |    ❌    | ❌  | ✅ 站点关键词 | 首页、分类集合、标签集合、文章归档页、所有第三方插件页面 |
 
 > **省略规则**：当发布/更新时间为空时，`og:release_date`、`og:modified_time`、`bytedance:published_time`、
