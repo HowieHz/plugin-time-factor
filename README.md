@@ -27,6 +27,7 @@
 - 支持启用/禁用搜索引擎优化功能
 - 可配置默认封面图片
 - 自动获取站点信息（标题、Logo、关键词等）
+- 支持按模板 ID 手动覆盖标题/描述，优先级最高
 
 ### 🛡️ 性能优化
 
@@ -40,9 +41,15 @@
 
 插件不自己拼接或硬编码任何标题/描述文字，而是优先读取已渲染好的 `<head>` 内容，保证 SEO 标签与页面实际展示完全一致：
 
-**标题**：`<title>` 标签文本 → 实体固定值 → 站点标题（设置 / 基本设置） → 不输出
+**标题**：SEO 覆盖配置（插件设置 / SEO 覆盖） → `<title>` 标签文本 → 实体固定值 → 站点标题（设置 / 基本设置） → 不输出
 
-**描述**：`<meta name="description">` 的 `content` → 实体固定值 → 站点描述（设置 / SEO 设置） → 不输出
+**描述**：SEO 覆盖配置（插件设置 / SEO 覆盖） → `<meta name="description">` 的 `content` → 实体固定值 → 站点描述（设置 / SEO
+设置） → 不输出
+
+> **局限性说明**：插件读取的 `<title>` 和 `<meta name="description">` 来自 Halo 在模板渲染前注入到内部模型（`IModel`）的值，由
+> Halo 核心框架写入，**与主题模板无关**。主题通过 Thymeleaf 模板动态渲染的标题/描述（如 `th:text`
+> 表达式的计算结果）在此阶段尚未执行，因此无法被读取。如果主题依赖模板表达式定制标题格式，建议通过「SEO 覆盖」手动指定，以确保
+> SEO 标签内容与预期一致。
 
 其中“实体固定值”因页面类型而异：
 
@@ -62,15 +69,16 @@
 | 首页    | `index`      | —                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/index_)     |
 | 文章详情页 | `post`       | Post + User + Tag      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/post)       |
 | 独立页面  | `page`       | SinglePage + User      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/page)       |
-| 分类列表页 | `categories` | —                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/categories) |
+| 分类集合页 | `categories` | —                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/categories) |
 | 分类详情页 | `category`   | Category（封面、permalink） | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/category)   |
-| 标签列表页 | `tags`       | —                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/tags)       |
-| 归档页   | `archives`   | —                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/archives)   |
+| 标签集合页 | `tags`       | —                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/tags)       |
+| 文章归档页 | `archives`   | —                      | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/archives)   |
 | 作者页   | `author`     | User（头像、permalink）     | [模板变量](https://docs.halo.run/developer-guide/theme/template-variables/author)     |
 
 > **暂不支持**：标签详情页（`tag`）——Halo 的标签路由未注入 `_templateId` 上下文变量，插件无法识别该页面类型。
 
-> **路由前缀**：分类列表、标签列表、归档页的 canonical URL 会读取 Halo CMS 的“主题路由设置”（设置 / 主题路由设置）配置，与站点实际路由保持同步，不使用硬编码路径。
+> **路由前缀**：分类集合、标签集合、归档页的 canonical URL 会读取 Halo CMS 的“主题路由设置”（设置 /
+> 主题路由设置）配置，与站点实际路由保持同步，不使用硬编码路径。
 
 ### 第三方插件页面
 
@@ -97,7 +105,7 @@
 | 分类详情页  | `website` | `WebPage`          |    ❌    | ❌  |  ✅ 分类名  | 分类无发布时间和作者                 |
 | 标签详情页  | `website` | `WebPage`          |    ❌    | ❌  |  ✅ 标签名  | （⚠️ 暂不支持）标签无发布时间和作者        |
 | 作者页    | `profile` | `ProfilePage`      |    ❌    | ✅  |  ✅ 作者名  | 作者页无发布时间                   |
-| 列表/聚合页 | `website` | `WebPage`          |    ❌    | ❌  | ✅ 站点关键词 | 首页、分类列表、标签列表、归档页、所有第三方插件页面 |
+| 列表/聚合页 | `website` | `WebPage`          |    ❌    | ❌  | ✅ 站点关键词 | 首页、分类集合、标签集合、文章归档页、所有第三方插件页面 |
 
 > **省略规则**：当发布/更新时间为空时，`og:release_date`、`og:modified_time`、`bytedance:published_time`、
 `bytedance:updated_time` 不输出；百度时间因子 `<script>` 中的 `pubDate`/`upDate` 字段不输出，若两者均为空则整个百度 script
