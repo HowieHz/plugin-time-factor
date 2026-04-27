@@ -182,11 +182,11 @@ spec:
               title: 文章归档 - %SITENAME%
               description: 文章归档 - %SITEDESC%
             - templateId: moments
-              title: "%TITLE% - %SITENAME%"
-              description: "%TITLE% - %SITEDESC%"
+              title: 瞬间 - %SITENAME%
+              description: 瞬间 - %SITEDESC%
             - templateId: moment
-              title: "%TITLE% - %SITENAME%"
-              description: "%TITLE% - %SITEDESC%"
+              title: 瞬间 - %SITENAME%
+              description: 瞬间 - %SITEDESC%
             - templateId: photos
               title: 图库 - %SITENAME%
               description: 图库 - %SITEDESC%
