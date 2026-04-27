@@ -9,7 +9,7 @@ spec:
   enabled: true
   requires: ">=2.24.0"
   author:
-    name: Handsome
+    name: Handsome&皓子
     website: https://www.lik.cc
   logo: logo.svg
   homepage: https://github.com/acanyo/plugin-time-factor#readme
